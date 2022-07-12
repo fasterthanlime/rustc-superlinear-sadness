@@ -26,13 +26,11 @@ where
 }
 
 trait Service<Request> {
-    type Future: FakeFuture<Output = SampleResponse>;
+    type Future: FakeFuture<Output = ()>;
     fn call(&mut self) -> Self::Future;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-struct SampleResponse;
 
 struct Borrowed<'a>(&'a mut ());
 
@@ -61,7 +59,7 @@ where
 struct InnerService;
 
 impl<'a> Service<Borrowed<'a>> for InnerService {
-    type Future = BaseFF<Borrowed<'a>, SampleResponse>;
+    type Future = BaseFF<Borrowed<'a>, ()>;
 
     fn call(&mut self) -> Self::Future {
         BaseFF {
@@ -76,6 +74,7 @@ fn main() {
     let service = InnerService;
 
     // 👋 uncomment / add more lines here to witness compile times going bonkers
+    let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
