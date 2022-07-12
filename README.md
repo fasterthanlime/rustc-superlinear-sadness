@@ -1,4 +1,4 @@
-# tower-quadratic
+# rustc-superlinear-sadness
 
 Showcase of how tower-style code can make compile times explode on rustc
 nightly as of 2022-07-12.
@@ -81,7 +81,7 @@ $ just seq assoc_type_1
 
 <img width="485" alt="image" src="https://user-images.githubusercontent.com/7998310/178554499-b71dcc45-6e8f-44de-859e-8e305af7075b.png">
 
-With two, it's quadratic:
+With two, it's exponential ($2^x$ growth):
 
 ```rust
 #[cfg(assoc_type_2)]
@@ -103,7 +103,7 @@ $ just seq assoc_type_2
 
 <img width="492" alt="image" src="https://user-images.githubusercontent.com/7998310/178554515-7ff922b3-b752-49fc-afff-0f63bf7b77e3.png">
 
-With three, it's... cubic!
+With three, it's exponential, but worse ($3^x$ growth)
 
 ```rust
 impl<'a, S> Service<&'a ()> for MiddleService<S>
@@ -126,7 +126,7 @@ $ just seq assoc_type_3
 
 ## outlives constraint
 
-This type of constraint also shows quadratic behavior:
+This type of constraint also shows exponential behavior ($2^x$):
 
 ```rust
 impl<'a, S> Service<&'a ()> for MiddleService<S>
