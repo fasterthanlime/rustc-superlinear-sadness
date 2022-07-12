@@ -6,7 +6,7 @@ nightly as of 2022-07-12.
 ## Timeline
 
   * 2022-07-12: repro created, profiling work by @fasterthanlime, @eddyb & @BoxyUwU to scope down the problem
-  * 2022-07-12: [rustc issue 99188](https://github.com/rust-lang/rust/issues/99188) by @eddyb
+  * 2022-07-12: [rustc issue 99188](https://github.com/rust-lang/rust/issues/99188) opened by @eddyb
 
 ## Repo structure
 
