@@ -62,11 +62,11 @@ fn main() {
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
-    // let service = MiddleService(service);
+    let service = MiddleService(service);
     // let service = MiddleService(service);
 
     let mut service = service;
     service.i_am_a_service();
 
-    let _ = service;
+    let _a = service;
 }
