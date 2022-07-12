@@ -87,8 +87,7 @@ fn make_http_service() -> Box<
 > {
     let service = InnerService;
 
-    // 👋 uncomment / add more `.layer` lines here to witness compile times
-    // going bonkers.
+    // 👋 uncomment / add more lines here to witness compile times going bonkers
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
