@@ -21,7 +21,7 @@ struct BorrowedRequest<'a> {
     req: &'a mut SampleRequest,
 }
 
-type BoxFut<'a, O> = Pin<Box<dyn Future<Output = O> + Send + 'a>>;
+type BoxFut<'a, O> = Pin<Box<dyn Future<Output = O> + 'a>>;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -32,10 +32,8 @@ impl<S> Service<SampleRequest> for OuterService<S>
 where
     for<'b> S: Service<BorrowedRequest<'b>, Response = SampleResponse, Error = SampleError>
         + Clone
-        + Send
-        + Sync
         + 'static,
-    for<'b> <S as Service<BorrowedRequest<'b>>>::Future: Send + 'b,
+    for<'b> <S as Service<BorrowedRequest<'b>>>::Future: 'b,
 {
     type Response = SampleResponse;
     type Error = SampleError;
@@ -63,9 +61,8 @@ impl<'a, S> Service<BorrowedRequest<'a>> for MiddleService<S>
 where
     for<'b> S: Service<BorrowedRequest<'b>, Response = SampleResponse, Error = SampleError>
         + Clone
-        + Send
         + 'static,
-    for<'b> <S as Service<BorrowedRequest<'b>>>::Future: Send + 'b,
+    for<'b> <S as Service<BorrowedRequest<'b>>>::Future: 'b,
 {
     type Response = SampleResponse;
     type Error = SampleError;
@@ -117,7 +114,8 @@ fn make_http_service() -> Box<
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
-    // let service = MiddleService(service);
+    let service = MiddleService(service);
+    let service = MiddleService(service);
     // let service = MiddleService(service);
 
     let service = OuterService(service);
