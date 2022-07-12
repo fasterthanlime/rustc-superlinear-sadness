@@ -56,9 +56,6 @@ where
     type Future = NestedFF<SampleRequest, <S as Service<BorrowedRequest<'static>>>::Future>;
 
     fn call(&mut self, _req: SampleRequest) -> Self::Future {
-        let mut inner = self.0.clone();
-        std::mem::swap(&mut self.0, &mut inner);
-
         NestedFF {
             _phantom: Default::default(),
         }
@@ -79,9 +76,6 @@ where
     type Future = NestedFF<BorrowedRequest<'a>, <S as Service<BorrowedRequest<'a>>>::Future>;
 
     fn call(&mut self, _req: BorrowedRequest<'a>) -> Self::Future {
-        let mut inner = self.0.clone();
-        std::mem::swap(&mut self.0, &mut inner);
-
         NestedFF {
             _phantom: Default::default(),
         }
