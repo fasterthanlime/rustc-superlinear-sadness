@@ -149,7 +149,7 @@ fn make_http_service() -> BoxCloneService<SampleRequest, SampleResponse, SampleE
         .layer(MiddleLayer)
         .layer(MiddleLayer)
         .layer(MiddleLayer)
-        // .layer(MiddleLayer)
+        .layer(MiddleLayer)
         // .layer(MiddleLayer)
         // .layer(MiddleLayer)
         // .layer(MiddleLayer)
