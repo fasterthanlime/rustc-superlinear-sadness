@@ -119,25 +119,26 @@ fn main() {
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
-    let service = MiddleService(service);
-    let service = MiddleService(service);
-    let service = MiddleService(service);
-    let service = MiddleService(service);
+
+    #[cfg(any(more7))]
     let service = MiddleService(service);
 
-    #[cfg(any(more5))]
+    #[cfg(any(more7, more6))]
     let service = MiddleService(service);
 
-    #[cfg(any(more5, more4))]
+    #[cfg(any(more7, more6, more5))]
     let service = MiddleService(service);
 
-    #[cfg(any(more5, more4, more3))]
+    #[cfg(any(more7, more6, more5, more4))]
     let service = MiddleService(service);
 
-    #[cfg(any(more5, more4, more3, more2))]
+    #[cfg(any(more7, more6, more5, more4, more3))]
     let service = MiddleService(service);
 
-    #[cfg(any(more5, more4, more3, more2, more1))]
+    #[cfg(any(more7, more6, more5, more4, more3, more2))]
+    let service = MiddleService(service);
+
+    #[cfg(any(more7, more6, more5, more4, more3, more2, more1))]
     let service = MiddleService(service);
 
     let mut service = service;
