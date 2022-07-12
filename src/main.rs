@@ -1,17 +1,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
-use std::marker::PhantomData;
-
 trait FakeFuture {
     type Output;
 }
 
-struct BaseFF<I, O> {
-    _phantom: PhantomData<(I, O)>,
-}
-
-impl<I, O> FakeFuture for BaseFF<I, O> {
-    type Output = O;
+impl<I> FakeFuture for (I,) {
+    type Output = ();
 }
 
 impl<I, F> FakeFuture for (I, F)
@@ -49,7 +43,7 @@ where
 struct InnerService;
 
 impl<'a> Service<Borrowed<'a>> for InnerService {
-    type Future = BaseFF<Borrowed<'a>, ()>;
+    type Future = (Borrowed<'a>,);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
