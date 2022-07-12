@@ -26,9 +26,7 @@ where
 }
 
 trait Service<Request> {
-    type Response;
-    type Future: FakeFuture<Output = Self::Response>;
-
+    type Future: FakeFuture<Output = SampleResponse>;
     fn call(&mut self) -> Self::Future;
 }
 
@@ -49,10 +47,9 @@ struct OuterService<S>(S);
 
 impl<S> Service<SampleRequest> for OuterService<S>
 where
-    for<'b> S: Service<BorrowedRequest<'b>, Response = SampleResponse> + Clone + 'static,
+    for<'b> S: Service<BorrowedRequest<'b>> + Clone + 'static,
     for<'b> <S as Service<BorrowedRequest<'b>>>::Future: 'b,
 {
-    type Response = SampleResponse;
     type Future = NestedFF<SampleRequest, <S as Service<BorrowedRequest<'static>>>::Future>;
 
     fn call(&mut self) -> Self::Future {
@@ -69,10 +66,9 @@ struct MiddleService<S>(S);
 
 impl<'a, S> Service<BorrowedRequest<'a>> for MiddleService<S>
 where
-    for<'b> S: Service<BorrowedRequest<'b>, Response = SampleResponse> + Clone + 'static,
+    for<'b> S: Service<BorrowedRequest<'b>> + Clone + 'static,
     for<'b> <S as Service<BorrowedRequest<'b>>>::Future: 'b,
 {
-    type Response = SampleResponse;
     type Future = NestedFF<BorrowedRequest<'a>, <S as Service<BorrowedRequest<'a>>>::Future>;
 
     fn call(&mut self) -> Self::Future {
@@ -88,8 +84,7 @@ where
 struct InnerService;
 
 impl<'a> Service<BorrowedRequest<'a>> for InnerService {
-    type Response = SampleResponse;
-    type Future = BaseFF<BorrowedRequest<'a>, Self::Response>;
+    type Future = BaseFF<BorrowedRequest<'a>, SampleResponse>;
 
     fn call(&mut self) -> Self::Future {
         BaseFF {
@@ -100,13 +95,8 @@ impl<'a> Service<BorrowedRequest<'a>> for InnerService {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-fn make_http_service() -> Box<
-    dyn Service<
-        SampleRequest,
-        Response = SampleResponse,
-        Future = impl FakeFuture<Output = SampleResponse>,
-    >,
-> {
+fn make_http_service(
+) -> Box<dyn Service<SampleRequest, Future = impl FakeFuture<Output = SampleResponse>>> {
     let service = InnerService;
 
     // 👋 uncomment / add more lines here to witness compile times going bonkers
@@ -120,7 +110,7 @@ fn make_http_service() -> Box<
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
-    // let service = MiddleService(service);
+    let service = MiddleService(service);
     // let service = MiddleService(service);
     // let service = MiddleService(service);
 
