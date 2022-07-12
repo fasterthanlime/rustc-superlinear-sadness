@@ -95,8 +95,7 @@ impl<'a> Service<BorrowedRequest<'a>> for InnerService {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-fn make_http_service(
-) -> Box<dyn Service<SampleRequest, Future = impl FakeFuture<Output = SampleResponse>>> {
+fn main() {
     let service = InnerService;
 
     // 👋 uncomment / add more lines here to witness compile times going bonkers
@@ -114,12 +113,8 @@ fn make_http_service(
     // let service = MiddleService(service);
     // let service = MiddleService(service);
 
-    let service = OuterService(service);
+    let mut service = service;
+    service.call();
 
-    Box::new(service)
-}
-
-fn main() {
-    let svc = make_http_service();
-    let _ = svc;
+    let _ = service;
 }
