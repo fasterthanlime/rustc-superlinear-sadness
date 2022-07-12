@@ -3,6 +3,13 @@
 Showcase of how tower-style code can make compile times explode on rustc
 nightly as of 2022-07-12.
 
+## Timeline
+
+  * 2022-07-12: repro created, profiling work by @fasterthanlime & @eddyb to show the problam
+  * 2022-07-12: [rustc issue 99188](https://github.com/rust-lang/rust/issues/99188) by @eddyb
+
+## Repo structure
+
 All the code is in `src/main.rs`, it has no dependencies - it doesn't even
 import anything outside the rust 2021 prelude.
 
