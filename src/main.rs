@@ -14,15 +14,11 @@ impl<I, O> FakeFuture for BaseFF<I, O> {
     type Output = O;
 }
 
-struct NestedFF<I, O> {
-    _phantom: PhantomData<(I, O)>,
-}
-
-impl<I, O> FakeFuture for NestedFF<I, O>
+impl<I, F> FakeFuture for (I, F)
 where
-    O: FakeFuture,
+    F: FakeFuture,
 {
-    type Output = O::Output;
+    type Output = ();
 }
 
 trait Service<Request> {
@@ -44,7 +40,7 @@ where
     for<'b> S: Service<Borrowed<'b>> + Clone + 'static,
     for<'b> <S as Service<Borrowed<'b>>>::Future: 'b,
 {
-    type Future = NestedFF<Borrowed<'a>, <S as Service<Borrowed<'a>>>::Future>;
+    type Future = (Borrowed<'a>, <S as Service<Borrowed<'a>>>::Future);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
