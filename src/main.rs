@@ -27,7 +27,7 @@ where
 
 trait Service<Request> {
     type Future: FakeFuture<Output = ()>;
-    fn call(&mut self) -> Self::Future;
+    fn i_am_a_service(&mut self) {}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -45,12 +45,6 @@ where
     for<'b> <S as Service<Borrowed<'b>>>::Future: 'b,
 {
     type Future = NestedFF<Borrowed<'a>, <S as Service<Borrowed<'a>>>::Future>;
-
-    fn call(&mut self) -> Self::Future {
-        NestedFF {
-            _phantom: Default::default(),
-        }
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -60,12 +54,6 @@ struct InnerService;
 
 impl<'a> Service<Borrowed<'a>> for InnerService {
     type Future = BaseFF<Borrowed<'a>, ()>;
-
-    fn call(&mut self) -> Self::Future {
-        BaseFF {
-            _phantom: Default::default(),
-        }
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -86,11 +74,11 @@ fn main() {
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
-    // let service = MiddleService(service);
+    let service = MiddleService(service);
     // let service = MiddleService(service);
 
     let mut service = service;
-    service.call();
+    service.i_am_a_service();
 
     let _ = service;
 }
