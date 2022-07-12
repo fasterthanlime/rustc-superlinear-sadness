@@ -26,8 +26,14 @@ You can use [this branch of my fork](https://github.com/fasterthanlime/rust/tree
 compile times going up but you won't get a nice "leaderboard" like in the README
 examples. 
 
+`crox` is being run on the most recent `*.mm_profdata` file to generate a
+"chrome tracing" file (as `chrome_profiler.json`), and then `jq` is used to
+filter only the `evaluate_predicate_recursively` calls, which are then
+sorted.
+
 `just seq {name}` will run `just run` multiple times in a row, with a higher
-`moreN` value every time. This is what is showcased in the README.
+`moreN` value every time, showing compile time growth. This is what is showcased
+in the README.
 
 ## assoc types
 
