@@ -16,7 +16,8 @@ where
 }
 
 trait Service<Request> {
-    type Future: FakeFuture<Output = ()>;
+    type Response;
+    type Future: FakeFuture<Output = Self::Response>;
     fn i_am_a_service(&mut self) {}
 }
 
@@ -27,10 +28,11 @@ struct MiddleService<S>(S);
 
 impl<'a, S> Service<&'a ()> for MiddleService<S>
 where
-    for<'b> S: Service<&'b ()>,
+    for<'b> S: Service<&'b (), Response = ()>,
     // 👋 comment this line to restore compile times to normal
     for<'b> <S as Service<&'b ()>>::Future: 'b,
 {
+    type Response = ();
     type Future = (&'a (), <S as Service<&'a ()>>::Future);
 }
 
@@ -40,6 +42,7 @@ where
 struct InnerService;
 
 impl<'a> Service<&'a ()> for InnerService {
+    type Response = ();
     type Future = (&'a (),);
 }
 
@@ -59,10 +62,10 @@ fn main() {
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
-    let service = MiddleService(service);
-    let service = MiddleService(service);
-    let service = MiddleService(service);
-    let service = MiddleService(service);
+    // let service = MiddleService(service);
+    // let service = MiddleService(service);
+    // let service = MiddleService(service);
+    // let service = MiddleService(service);
     // let service = MiddleService(service);
 
     let mut service = service;
