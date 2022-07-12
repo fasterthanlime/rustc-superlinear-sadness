@@ -1,3 +1,3 @@
 {
-	"rust-analyzer.checkOnSave.enable": true
+	"rust-analyzer.checkOnSave.enable": false
 }

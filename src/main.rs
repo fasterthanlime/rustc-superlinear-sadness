@@ -29,7 +29,7 @@ trait Service<Request> {
     type Response;
     type Future: FakeFuture<Output = Self::Response>;
 
-    fn call(&mut self, req: Request) -> Self::Future;
+    fn call(&mut self) -> Self::Future;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ where
     type Response = SampleResponse;
     type Future = NestedFF<SampleRequest, <S as Service<BorrowedRequest<'static>>>::Future>;
 
-    fn call(&mut self, _req: SampleRequest) -> Self::Future {
+    fn call(&mut self) -> Self::Future {
         NestedFF {
             _phantom: Default::default(),
         }
@@ -75,7 +75,7 @@ where
     type Response = SampleResponse;
     type Future = NestedFF<BorrowedRequest<'a>, <S as Service<BorrowedRequest<'a>>>::Future>;
 
-    fn call(&mut self, _req: BorrowedRequest<'a>) -> Self::Future {
+    fn call(&mut self) -> Self::Future {
         NestedFF {
             _phantom: Default::default(),
         }
@@ -91,7 +91,7 @@ impl<'a> Service<BorrowedRequest<'a>> for InnerService {
     type Response = SampleResponse;
     type Future = BaseFF<BorrowedRequest<'a>, Self::Response>;
 
-    fn call(&mut self, _req: BorrowedRequest<'a>) -> Self::Future {
+    fn call(&mut self) -> Self::Future {
         BaseFF {
             _phantom: Default::default(),
         }
@@ -119,6 +119,8 @@ fn make_http_service() -> Box<
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
+    let service = MiddleService(service);
+    // let service = MiddleService(service);
     // let service = MiddleService(service);
     // let service = MiddleService(service);
 
