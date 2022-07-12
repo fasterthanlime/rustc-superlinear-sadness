@@ -9,8 +9,8 @@ import anything outside the rust 2021 prelude.
 The code will only compile if one of those `cfg` is set:
 
   * `assoc_type_0`, `assoc_type_1`, `assoc_type_2`, `assoc_type_3`
-	* `outlives`
-	* `clone`
+  * `outlives`
+  * `clone`
 
 You can "add nesting" to show how compile time evolves, by adding `--cfg more1`,
 `--cfg more2`, etc. until `more7`.
