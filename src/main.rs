@@ -32,44 +32,21 @@ trait Service<Request> {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct SampleRequest;
 struct SampleResponse;
 
-struct BorrowedRequest<'a> {
-    #[allow(dead_code)]
-    req: &'a mut SampleRequest,
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-#[derive(Clone)]
-struct OuterService<S>(S);
-
-impl<S> Service<SampleRequest> for OuterService<S>
-where
-    for<'b> S: Service<BorrowedRequest<'b>> + Clone + 'static,
-    for<'b> <S as Service<BorrowedRequest<'b>>>::Future: 'b,
-{
-    type Future = NestedFF<SampleRequest, <S as Service<BorrowedRequest<'static>>>::Future>;
-
-    fn call(&mut self) -> Self::Future {
-        NestedFF {
-            _phantom: Default::default(),
-        }
-    }
-}
+struct Borrowed<'a>(&'a mut ());
 
 ////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Clone)]
 struct MiddleService<S>(S);
 
-impl<'a, S> Service<BorrowedRequest<'a>> for MiddleService<S>
+impl<'a, S> Service<Borrowed<'a>> for MiddleService<S>
 where
-    for<'b> S: Service<BorrowedRequest<'b>> + Clone + 'static,
-    for<'b> <S as Service<BorrowedRequest<'b>>>::Future: 'b,
+    for<'b> S: Service<Borrowed<'b>> + Clone + 'static,
+    for<'b> <S as Service<Borrowed<'b>>>::Future: 'b,
 {
-    type Future = NestedFF<BorrowedRequest<'a>, <S as Service<BorrowedRequest<'a>>>::Future>;
+    type Future = NestedFF<Borrowed<'a>, <S as Service<Borrowed<'a>>>::Future>;
 
     fn call(&mut self) -> Self::Future {
         NestedFF {
@@ -83,8 +60,8 @@ where
 #[derive(Clone)]
 struct InnerService;
 
-impl<'a> Service<BorrowedRequest<'a>> for InnerService {
-    type Future = BaseFF<BorrowedRequest<'a>, SampleResponse>;
+impl<'a> Service<Borrowed<'a>> for InnerService {
+    type Future = BaseFF<Borrowed<'a>, SampleResponse>;
 
     fn call(&mut self) -> Self::Future {
         BaseFF {
