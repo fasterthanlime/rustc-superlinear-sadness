@@ -1,7 +1,14 @@
-#![feature(type_alias_impl_trait)]
+use std::{future::Future, pin::Pin};
 
-use std::future::Future;
-use tower::{util::BoxCloneService, Layer, Service, ServiceBuilder, ServiceExt};
+////////////////////////////////////////////////////////////////////////////////
+
+trait Service<Request> {
+    type Response;
+    type Error;
+    type Future: Future<Output = Result<Self::Response, Self::Error>>;
+
+    fn call(&mut self, req: Request) -> Self::Future;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -9,27 +16,17 @@ struct SampleRequest;
 struct SampleResponse;
 struct SampleError;
 
-////////////////////////////////////////////////////////////////////////////////
-
-struct OuterLayer;
-
 struct BorrowedRequest<'a> {
     #[allow(dead_code)]
     req: &'a mut SampleRequest,
 }
 
-impl<S> Layer<S> for OuterLayer {
-    type Service = OuterService<S>;
+type BoxFut<'a, O> = Pin<Box<dyn Future<Output = O> + Send + 'a>>;
 
-    fn layer(&self, inner: S) -> Self::Service {
-        OuterService { inner }
-    }
-}
+////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Clone)]
-struct OuterService<S> {
-    inner: S,
-}
+struct OuterService<S>(S);
 
 impl<S> Service<SampleRequest> for OuterService<S>
 where
@@ -42,44 +39,25 @@ where
 {
     type Response = SampleResponse;
     type Error = SampleError;
-    type Future = impl Future<Output = Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(
-        &mut self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
-    }
+    type Future = BoxFut<'static, Result<Self::Response, Self::Error>>;
 
     fn call(&mut self, mut req: SampleRequest) -> Self::Future {
-        let mut inner = self.inner.clone();
-        std::mem::swap(&mut self.inner, &mut inner);
+        let mut inner = self.0.clone();
+        std::mem::swap(&mut self.0, &mut inner);
 
-        async move {
+        Box::pin(async move {
             let breq = BorrowedRequest { req: &mut req };
 
             let res = inner.call(breq).await?;
             Ok(res)
-        }
+        })
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct MiddleLayer;
-
-impl<S> Layer<S> for MiddleLayer {
-    type Service = MiddleService<S>;
-
-    fn layer(&self, inner: S) -> Self::Service {
-        MiddleService { inner }
-    }
-}
-
 #[derive(Clone)]
-struct MiddleService<S> {
-    inner: S,
-}
+struct MiddleService<S>(S);
 
 impl<'a, S> Service<BorrowedRequest<'a>> for MiddleService<S>
 where
@@ -91,23 +69,16 @@ where
 {
     type Response = SampleResponse;
     type Error = SampleError;
-    type Future = impl Future<Output = Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(
-        &mut self,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        self.inner.poll_ready(cx)
-    }
+    type Future = BoxFut<'a, Result<Self::Response, Self::Error>>;
 
     fn call(&mut self, req: BorrowedRequest<'a>) -> Self::Future {
-        let mut inner = self.inner.clone();
-        std::mem::swap(&mut self.inner, &mut inner);
+        let mut inner = self.0.clone();
+        std::mem::swap(&mut self.0, &mut inner);
 
-        async move {
+        Box::pin(async move {
             let res = inner.call(req).await?;
             Ok(res)
-        }
+        })
     }
 }
 
@@ -119,42 +90,39 @@ struct InnerService;
 impl<'a> Service<BorrowedRequest<'a>> for InnerService {
     type Response = SampleResponse;
     type Error = SampleError;
-    type Future = impl Future<Output = Result<Self::Response, Self::Error>>;
-
-    fn poll_ready(
-        &mut self,
-        _cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Result<(), Self::Error>> {
-        Ok(()).into()
-    }
+    type Future = BoxFut<'static, Result<Self::Response, Self::Error>>;
 
     fn call(&mut self, req: BorrowedRequest<'a>) -> Self::Future {
-        async move {
+        Box::pin(async move {
             let _ = req;
             Ok(SampleResponse)
-        }
+        })
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-fn make_http_service() -> BoxCloneService<SampleRequest, SampleResponse, SampleError> {
+fn make_http_service() -> Box<
+    dyn Service<
+        SampleRequest,
+        Response = SampleResponse,
+        Error = SampleError,
+        Future = BoxFut<'static, Result<SampleResponse, SampleError>>,
+    >,
+> {
+    let service = InnerService;
+
     // 👋 uncomment / add more `.layer` lines here to witness compile times
     // going bonkers.
+    let service = MiddleService(service);
+    let service = MiddleService(service);
+    let service = MiddleService(service);
+    // let service = MiddleService(service);
+    // let service = MiddleService(service);
 
-    ServiceBuilder::new()
-        .layer(OuterLayer)
-        .layer(MiddleLayer)
-        .layer(MiddleLayer)
-        .layer(MiddleLayer)
-        .layer(MiddleLayer)
-        .layer(MiddleLayer)
-        .layer(MiddleLayer)
-        // .layer(MiddleLayer)
-        // .layer(MiddleLayer)
-        // .layer(MiddleLayer)
-        .service(InnerService)
-        .boxed_clone()
+    let service = OuterService(service);
+
+    Box::new(service)
 }
 
 fn main() {
