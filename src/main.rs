@@ -22,19 +22,15 @@ trait Service<Request> {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct Borrowed<'a>(&'a mut ());
-
-////////////////////////////////////////////////////////////////////////////////
-
 #[derive(Clone)]
 struct MiddleService<S>(S);
 
-impl<'a, S> Service<Borrowed<'a>> for MiddleService<S>
+impl<'a, S> Service<&'a ()> for MiddleService<S>
 where
-    for<'b> S: Service<Borrowed<'b>> + Clone + 'static,
-    for<'b> <S as Service<Borrowed<'b>>>::Future: 'b,
+    for<'b> S: Service<&'b ()> + Clone + 'static,
+    for<'b> <S as Service<&'b ()>>::Future: 'b,
 {
-    type Future = (Borrowed<'a>, <S as Service<Borrowed<'a>>>::Future);
+    type Future = (&'a (), <S as Service<&'a ()>>::Future);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,8 +38,8 @@ where
 #[derive(Clone)]
 struct InnerService;
 
-impl<'a> Service<Borrowed<'a>> for InnerService {
-    type Future = (Borrowed<'a>,);
+impl<'a> Service<&'a ()> for InnerService {
+    type Future = (&'a (),);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
