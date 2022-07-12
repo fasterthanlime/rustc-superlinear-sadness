@@ -150,3 +150,13 @@ where
     for<'b> S: Service<&'b ()>,
     for<'b> <S as Service<&'b ()>>::Future: Clone,
 ```
+
+## smaller repro
+
+Here's a smaller repro of the "assoc types" explosion: [Playground](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e63793ea5031cb7aa38c64a71e49de23).
+
+Adding another `&` in `main` makes the playground time out (be nice to the playground).
+
+## next steps
+
+Several issues are being filed, let's see where this goes!
