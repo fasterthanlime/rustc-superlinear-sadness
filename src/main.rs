@@ -1,8 +1,33 @@
 ////////////////////////////////////////////////////////////////////////////////
 
+use std::marker::PhantomData;
+
+trait FakeFuture {
+    type Output;
+}
+
+struct BaseFF<I, O> {
+    _phantom: PhantomData<(I, O)>,
+}
+
+impl<I, O> FakeFuture for BaseFF<I, O> {
+    type Output = O;
+}
+
+struct NestedFF<I, O> {
+    _phantom: PhantomData<(I, O)>,
+}
+
+impl<I, O> FakeFuture for NestedFF<I, O>
+where
+    O: FakeFuture,
+{
+    type Output = O::Output;
+}
+
 trait Service<Request> {
     type Response;
-    type Future: FnOnce() -> Self::Response;
+    type Future: FakeFuture<Output = Self::Response>;
 
     fn call(&mut self, req: Request) -> Self::Future;
 }
@@ -17,8 +42,6 @@ struct BorrowedRequest<'a> {
     req: &'a mut SampleRequest,
 }
 
-type BoxFut<'a, O> = Box<dyn FnOnce() -> O + 'a>;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 #[derive(Clone)]
@@ -30,16 +53,15 @@ where
     for<'b> <S as Service<BorrowedRequest<'b>>>::Future: 'b,
 {
     type Response = SampleResponse;
-    type Future = BoxFut<'static, Self::Response>;
+    type Future = NestedFF<SampleRequest, <S as Service<BorrowedRequest<'static>>>::Future>;
 
-    fn call(&mut self, mut req: SampleRequest) -> Self::Future {
+    fn call(&mut self, _req: SampleRequest) -> Self::Future {
         let mut inner = self.0.clone();
         std::mem::swap(&mut self.0, &mut inner);
 
-        Box::new(move || {
-            let breq = BorrowedRequest { req: &mut req };
-            (inner.call(breq))()
-        })
+        NestedFF {
+            _phantom: Default::default(),
+        }
     }
 }
 
@@ -54,13 +76,15 @@ where
     for<'b> <S as Service<BorrowedRequest<'b>>>::Future: 'b,
 {
     type Response = SampleResponse;
-    type Future = BoxFut<'a, Self::Response>;
+    type Future = NestedFF<BorrowedRequest<'a>, <S as Service<BorrowedRequest<'a>>>::Future>;
 
-    fn call(&mut self, req: BorrowedRequest<'a>) -> Self::Future {
+    fn call(&mut self, _req: BorrowedRequest<'a>) -> Self::Future {
         let mut inner = self.0.clone();
         std::mem::swap(&mut self.0, &mut inner);
 
-        Box::new(move || (inner.call(req))())
+        NestedFF {
+            _phantom: Default::default(),
+        }
     }
 }
 
@@ -71,17 +95,23 @@ struct InnerService;
 
 impl<'a> Service<BorrowedRequest<'a>> for InnerService {
     type Response = SampleResponse;
-    type Future = BoxFut<'static, Self::Response>;
+    type Future = BaseFF<BorrowedRequest<'a>, Self::Response>;
 
     fn call(&mut self, _req: BorrowedRequest<'a>) -> Self::Future {
-        Box::new(move || SampleResponse)
+        BaseFF {
+            _phantom: Default::default(),
+        }
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 fn make_http_service() -> Box<
-    dyn Service<SampleRequest, Response = SampleResponse, Future = BoxFut<'static, SampleResponse>>,
+    dyn Service<
+        SampleRequest,
+        Response = SampleResponse,
+        Future = impl FakeFuture<Output = SampleResponse>,
+    >,
 > {
     let service = InnerService;
 
@@ -93,7 +123,8 @@ fn make_http_service() -> Box<
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
-    // let service = MiddleService(service);
+    let service = MiddleService(service);
+    let service = MiddleService(service);
     // let service = MiddleService(service);
     // let service = MiddleService(service);
 
