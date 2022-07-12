@@ -1,10 +1,8 @@
-use std::{future::Future, pin::Pin};
-
 ////////////////////////////////////////////////////////////////////////////////
 
 trait Service<Request> {
     type Response;
-    type Future: Future<Output = Self::Response>;
+    type Future: FnOnce() -> Self::Response;
 
     fn call(&mut self, req: Request) -> Self::Future;
 }
@@ -19,7 +17,7 @@ struct BorrowedRequest<'a> {
     req: &'a mut SampleRequest,
 }
 
-type BoxFut<'a, O> = Pin<Box<dyn Future<Output = O> + 'a>>;
+type BoxFut<'a, O> = Box<dyn FnOnce() -> O + 'a>;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -38,9 +36,9 @@ where
         let mut inner = self.0.clone();
         std::mem::swap(&mut self.0, &mut inner);
 
-        Box::pin(async move {
+        Box::new(move || {
             let breq = BorrowedRequest { req: &mut req };
-            inner.call(breq).await
+            (inner.call(breq))()
         })
     }
 }
@@ -62,7 +60,7 @@ where
         let mut inner = self.0.clone();
         std::mem::swap(&mut self.0, &mut inner);
 
-        Box::pin(async move { inner.call(req).await })
+        Box::new(move || (inner.call(req))())
     }
 }
 
@@ -76,7 +74,7 @@ impl<'a> Service<BorrowedRequest<'a>> for InnerService {
     type Future = BoxFut<'static, Self::Response>;
 
     fn call(&mut self, _req: BorrowedRequest<'a>) -> Self::Future {
-        Box::pin(async move { SampleResponse })
+        Box::new(move || SampleResponse)
     }
 }
 
@@ -95,7 +93,7 @@ fn make_http_service() -> Box<
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
-    let service = MiddleService(service);
+    // let service = MiddleService(service);
     // let service = MiddleService(service);
     // let service = MiddleService(service);
 
