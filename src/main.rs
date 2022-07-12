@@ -27,7 +27,7 @@ struct MiddleService<S>(S);
 
 impl<'a, S> Service<&'a ()> for MiddleService<S>
 where
-    for<'b> S: Service<&'b ()> + Clone + 'static,
+    for<'b> S: Service<&'b ()>,
     for<'b> <S as Service<&'b ()>>::Future: 'b,
 {
     type Future = (&'a (), <S as Service<&'a ()>>::Future);
@@ -61,6 +61,7 @@ fn main() {
     let service = MiddleService(service);
     let service = MiddleService(service);
     let service = MiddleService(service);
+    // let service = MiddleService(service);
     // let service = MiddleService(service);
 
     let mut service = service;
