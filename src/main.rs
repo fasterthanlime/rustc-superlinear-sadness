@@ -28,6 +28,7 @@ struct MiddleService<S>(S);
 impl<'a, S> Service<&'a ()> for MiddleService<S>
 where
     for<'b> S: Service<&'b ()>,
+    // 👋 comment this line to restore compile times to normal
     for<'b> <S as Service<&'b ()>>::Future: 'b,
 {
     type Future = (&'a (), <S as Service<&'a ()>>::Future);
